@@ -6,6 +6,8 @@
 # https://doc.scrapy.org/en/latest/topics/spider-middleware.html
 
 from scrapy import signals
+import random
+
 
 
 class ScrapydemoSpiderMiddleware(object):
@@ -78,7 +80,10 @@ class ScrapydemoDownloaderMiddleware(object):
         # - or return a Request object
         # - or raise IgnoreRequest: process_exception() methods of
         #   installed downloader middleware will be called
-        return None
+        proxy = self.getRandomProxy()
+        print("==================="+proxy)
+        request.meta['proxy'] = proxy
+        
 
     def process_response(self, request, response, spider):
         # Called with the response returned from the downloader.
@@ -87,6 +92,10 @@ class ScrapydemoDownloaderMiddleware(object):
         # - return a Response object
         # - return a Request object
         # - or raise IgnoreRequest
+        if response.status !=200:
+            proxy = self.getRandomProxy()
+            request.meta['proxy'] = proxy
+            return request
         return response
 
     def process_exception(self, request, exception, spider):
@@ -101,3 +110,21 @@ class ScrapydemoDownloaderMiddleware(object):
 
     def spider_opened(self, spider):
         spider.logger.info('Spider opened: %s' % spider.name)
+
+    def getRandomProxy(self):
+        proxyList = open('proxies.txt','r').readlines()
+        return random.choice(proxyList).strip()
+
+class RandomUserAgent(object):
+    """Randomly rotate user agents based on a list of predefined ones"""
+ 
+    def __init__(self, agents):
+        self.agents = agents
+ 
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(crawler.settings.getlist('USER_AGENTS'))
+ 
+    def process_request(self, request, spider):
+        #print "**************************" + random.choice(self.agents)
+        request.headers.setdefault('User-Agent', random.choice(self.agents))
